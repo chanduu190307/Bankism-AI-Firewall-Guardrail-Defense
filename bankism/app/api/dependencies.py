@@ -52,6 +52,12 @@ def check_rate_limit(request: Request) -> None:
     # Clean old timestamps
     _RATE_LIMIT_STORE[client_ip] = [t for t in _RATE_LIMIT_STORE[client_ip] if t > window_start]
 
+    # Periodic cleanup of inactive IPs to bound memory usage
+    if len(_RATE_LIMIT_STORE) > 500:
+        stale_ips = [ip for ip, timestamps in _RATE_LIMIT_STORE.items() if not timestamps]
+        for ip in stale_ips:
+            _RATE_LIMIT_STORE.pop(ip, None)
+
     if len(_RATE_LIMIT_STORE[client_ip]) >= settings.rate_limit_per_minute:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,

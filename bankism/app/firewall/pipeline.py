@@ -2,13 +2,20 @@
 
 import logging
 
+from bankism.app.banking.authorization import SYNTHETIC_ACCOUNT_DIRECTORY
+from bankism.app.core.config import get_settings
 from bankism.app.core.security import create_execution_token
 from bankism.app.firewall.normalizer import normalize_input
 from bankism.app.firewall.policy_engine import evaluate_policy
 from bankism.app.firewall.risk_engine import calculate_risk_score
-from bankism.app.firewall.rule_engine import RuleMatch, evaluate_rules
+from bankism.app.firewall.rule_engine import (
+    PATTERN_AMBIGUOUS_AMOUNT,
+    PATTERN_AMBIGUOUS_RECIPIENT,
+    RuleMatch,
+    evaluate_rules,
+)
 from bankism.app.firewall.threat_classifier import ThreatClassifier, get_threat_classifier
-from bankism.app.schemas.requests import FirewallAnalyzeRequest
+from bankism.app.schemas.requests import BankingOperation, FirewallAnalyzeRequest
 from bankism.app.schemas.verdicts import FirewallVerdict, ThreatCategory, Verdict
 
 logger = logging.getLogger("bankism.pipeline")
@@ -36,23 +43,17 @@ class FirewallPipeline:
 
         # Stage 2: Rule Matching across surfaces
         rule_matches = evaluate_rules(norm_result.normalized_text, memo=request.memo)
+        matched_rule_ids = {rm.rule_id for rm in rule_matches}
 
         # Also evaluate decoded payloads if obfuscation was unpacked
         for decoded_p in norm_result.decoded_payloads:
             decoded_matches = evaluate_rules(decoded_p)
             for m in decoded_matches:
-                if m.rule_id not in [rm.rule_id for rm in rule_matches]:
+                if m.rule_id not in matched_rule_ids:
+                    matched_rule_ids.add(m.rule_id)
                     rule_matches.append(m)
 
         # Inspect monetary and recipient constraints on transfer operations
-        from bankism.app.banking.authorization import SYNTHETIC_ACCOUNT_DIRECTORY
-        from bankism.app.core.config import get_settings
-        from bankism.app.firewall.rule_engine import (
-            PATTERN_AMBIGUOUS_AMOUNT,
-            PATTERN_AMBIGUOUS_RECIPIENT,
-        )
-        from bankism.app.schemas.requests import BankingOperation
-
         settings = get_settings()
         if request.operation == BankingOperation.TRANSFER:
             if request.amount is not None:

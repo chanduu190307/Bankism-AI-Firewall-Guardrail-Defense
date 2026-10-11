@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StatusBadge } from '../components/common/StatusBadge';
 import type { AuditLogRecord } from '../types';
 
@@ -23,6 +23,40 @@ export const AuditTrailPage: React.FC<AuditTrailPageProps> = ({
   const pageSize = 15;
 
   const [selectedRecord, setSelectedRecord] = useState<AuditLogRecord | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Accessible keyboard trap & Escape handling for modal
+  useEffect(() => {
+    if (!selectedRecord) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedRecord(null);
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedRecord]);
 
   // Filter logs
   const filtered = logs.filter((l) => {
@@ -246,6 +280,7 @@ export const AuditTrailPage: React.FC<AuditTrailPageProps> = ({
                           className="btn btn-secondary btn-sm"
                           style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
                           onClick={() => setSelectedRecord(log)}
+                          aria-label={`Inspect audit record for request ${log.request_id.slice(0, 16)}`}
                         >
                           Details
                         </button>
@@ -310,14 +345,16 @@ export const AuditTrailPage: React.FC<AuditTrailPageProps> = ({
         <div
           className="modal-backdrop"
           onClick={() => setSelectedRecord(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="audit-record-title"
+          role="presentation"
         >
           <div
+            ref={modalRef}
             className="modal-dialog"
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '600px' }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="audit-record-title"
           >
             <div className="modal-header">
               <h3 id="audit-record-title" className="card-title">

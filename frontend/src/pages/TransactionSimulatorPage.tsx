@@ -169,7 +169,7 @@ export const TransactionSimulatorPage: React.FC<TransactionSimulatorPageProps> =
       setExecutionResult(res);
 
       // Only update balances if backend confirmed execution
-      if (res.status === 'EXECUTED' && res.new_balance !== undefined) {
+      if ((res.status === 'COMPLETED' || res.status === 'EXECUTED') && res.new_balance !== undefined) {
         setAccounts((prev) =>
           prev.map((acc) => {
             if (acc.account_id === sourceAcc) {
@@ -236,56 +236,59 @@ export const TransactionSimulatorPage: React.FC<TransactionSimulatorPageProps> =
           </span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', textAlign: 'center' }}>
-          {[
-            { step: 1, title: '1. Request Draft', desc: 'Financial Parameters' },
-            { step: 2, title: '2. Firewall Analysis', desc: 'Prompt Inspection' },
-            { step: 3, title: '3. Policy Decision', desc: 'Deterministic Gate' },
-            { step: 4, title: '4. Token Issuance', desc: 'HMAC-SHA256 Secret' },
-            { step: 5, title: '5. Core Execution', desc: 'Atomic Balance Update' },
-          ].map((s) => {
-            const isCompleted = currentStep > s.step;
-            const isCurrent = currentStep === s.step;
-            return (
-              <div
-                key={s.step}
-                style={{
-                  padding: '0.5rem 0.35rem',
-                  borderRadius: 'var(--radius-md)',
-                  backgroundColor: isCompleted
-                    ? 'var(--status-approve-bg)'
-                    : isCurrent
-                    ? 'var(--emerald-tint)'
-                    : 'var(--surface-secondary)',
-                  border: `1px solid ${
-                    isCompleted
-                      ? 'var(--status-approve-border)'
-                      : isCurrent
-                      ? 'var(--emerald-primary)'
-                      : 'var(--border-default)'
-                  }`,
-                }}
-              >
-                <div
+        <nav aria-label="Banking execution workflow progress">
+          <ol style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', textAlign: 'center', listStyle: 'none', padding: 0, margin: 0 }}>
+            {[
+              { step: 1, title: '1. Request Draft', desc: 'Financial Parameters' },
+              { step: 2, title: '2. Firewall Analysis', desc: 'Prompt Inspection' },
+              { step: 3, title: '3. Policy Decision', desc: 'Deterministic Gate' },
+              { step: 4, title: '4. Token Issuance', desc: 'HMAC-SHA256 Secret' },
+              { step: 5, title: '5. Core Execution', desc: 'Atomic Balance Update' },
+            ].map((s) => {
+              const isCompleted = currentStep > s.step;
+              const isCurrent = currentStep === s.step;
+              return (
+                <li
+                  key={s.step}
+                  aria-current={isCurrent ? 'step' : undefined}
                   style={{
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    color: isCompleted
-                      ? 'var(--status-approve-text)'
+                    padding: '0.5rem 0.35rem',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: isCompleted
+                      ? 'var(--status-approve-bg)'
                       : isCurrent
-                      ? 'var(--emerald-dark)'
-                      : 'var(--text-secondary)',
+                      ? 'var(--emerald-tint)'
+                      : 'var(--surface-secondary)',
+                    border: `1px solid ${
+                      isCompleted
+                        ? 'var(--status-approve-border)'
+                        : isCurrent
+                        ? 'var(--emerald-primary)'
+                        : 'var(--border-default)'
+                    }`,
                   }}
                 >
-                  {isCompleted ? '✓ ' : ''}{s.title}
-                </div>
-                <div style={{ fontSize: '0.66rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                  {s.desc}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                  <div
+                    style={{
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      color: isCompleted
+                        ? 'var(--status-approve-text)'
+                        : isCurrent
+                        ? 'var(--emerald-dark)'
+                        : 'var(--text-secondary)',
+                    }}
+                  >
+                    {isCompleted ? '✓ ' : ''}{s.title}
+                  </div>
+                  <div style={{ fontSize: '0.66rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                    {s.desc}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
       </div>
 
       {/* Synthetic Account Cards */}

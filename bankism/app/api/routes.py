@@ -196,13 +196,12 @@ async def get_health() -> HealthResponse:
     summary="Query Sanitized Security Audit Log Stream",
 )
 async def query_audit_logs(
+    auditor: Annotated[AuditService, Depends(get_audit_service)],
     limit: Annotated[int, Query(ge=1, le=200, description="Max logs to return (1-200)")] = 50,
     offset: Annotated[int, Query(ge=0, description="Offset index for pagination")] = 0,
-    auditor: Annotated[AuditService, Depends(get_audit_service)] = None,  # type: ignore[assignment]
 ) -> list[AuditLogRecord]:
     """Retrieve sanitized security inspection events."""
     return auditor.get_logs(limit=limit, offset=offset)
-
 
 
 @router.get(
@@ -211,7 +210,7 @@ async def query_audit_logs(
     summary="Query Real-Time Firewall Security Metrics",
 )
 async def query_metrics(
-    auditor: Annotated[AuditService, Depends(get_audit_service)] = None,  # type: ignore[assignment]
+    auditor: Annotated[AuditService, Depends(get_audit_service)],
 ) -> dict[str, Any]:
     """Return aggregated defense telemetry metrics."""
     return auditor.get_metrics()

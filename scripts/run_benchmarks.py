@@ -1,11 +1,11 @@
 """Performance benchmark suite measuring median, p95, and p99 latency for Bankism AI Firewall."""
 
 import asyncio
-from pathlib import Path
 import platform
 import statistics
 import sys
 import time
+from pathlib import Path
 
 # Ensure repository root is on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -88,14 +88,14 @@ async def run_benchmark(iterations: int = 400) -> None:
     max_ms = max(latencies_ms)
     throughput = iterations / total_time
 
-    print(f"Environment & Hardware:")
+    print("Environment & Hardware:")
     print(f"  OS:              {platform.system()} {platform.release()} ({platform.machine()})")
     print(f"  Python:          {platform.python_version()} ({platform.python_implementation()})")
     print(f"  Total Samples:   {iterations}")
     print(f"  Total Elapsed:   {total_time:.3f} s")
     print(f"  Throughput:      {throughput:.1f} req/s\n")
 
-    print(f"Latency Measurements:")
+    print("Latency Measurements:")
     print(f"  Min Latency:     {min_ms:.3f} ms")
     print(f"  Median (p50):    {median_ms:.3f} ms")
     print(f"  Mean Latency:    {mean_ms:.3f} ms")

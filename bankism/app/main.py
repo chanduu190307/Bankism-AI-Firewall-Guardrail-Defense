@@ -1,8 +1,9 @@
 """FastAPI application entrypoint for Bankism AI Firewall & Guardrail Defense."""
 
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -38,19 +39,32 @@ app.add_middleware(
 
 # Request Size Limit Middleware (enforces max 64 KB payload boundary)
 @app.middleware("http")
-async def enforce_request_size_limit(request: Request, call_next):  # type: ignore[no-untyped-def]
+async def enforce_request_size_limit(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
     content_length = request.headers.get("content-length")
-    if content_length and int(content_length) > settings.max_request_bytes:
-        return JSONResponse(
-            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-            content={
-                "error": "PAYLOAD_TOO_LARGE",
-                "message": (
-                    f"Payload exceeds maximum allowed size of "
-                    f"{settings.max_request_bytes} bytes."
-                ),
-            },
-        )
+    if content_length:
+        try:
+            if int(content_length) > settings.max_request_bytes:
+                return JSONResponse(
+                    status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                    content={
+                        "error": "PAYLOAD_TOO_LARGE",
+                        "message": (
+                            f"Payload exceeds maximum allowed size of "
+                            f"{settings.max_request_bytes} bytes."
+                        ),
+                    },
+                )
+        except ValueError:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "error": "INVALID_HEADER",
+                    "message": "Malformed Content-Length header.",
+                },
+            )
 
     # Security headers on all outgoing responses
     response = await call_next(request)

@@ -48,6 +48,15 @@ def redact_sensitive_text(text: str) -> str:
     return redacted
 
 
+def _redact_list_item(item: Any) -> Any:
+    """Helper to redact elements within lists."""
+    if isinstance(item, dict):
+        return redact_sensitive_dict(item)
+    if isinstance(item, str):
+        return redact_sensitive_text(item)
+    return item
+
+
 def redact_sensitive_dict(data: dict[str, Any]) -> dict[str, Any]:
     """Recursively mask sensitive values in nested dictionaries."""
     sensitive_keys = {
@@ -68,14 +77,7 @@ def redact_sensitive_dict(data: dict[str, Any]) -> dict[str, Any]:
         elif isinstance(v, dict):
             cleaned[k] = redact_sensitive_dict(v)
         elif isinstance(v, list):
-            cleaned[k] = [
-                redact_sensitive_dict(item)
-                if isinstance(item, dict)
-                else redact_sensitive_text(str(item))
-                if isinstance(item, str)
-                else item
-                for item in v
-            ]
+            cleaned[k] = [_redact_list_item(item) for item in v]
         elif isinstance(v, str):
             cleaned[k] = redact_sensitive_text(v)
         else:

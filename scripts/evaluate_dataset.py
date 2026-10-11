@@ -15,10 +15,10 @@ Calculates:
 """
 
 import asyncio
-from datetime import datetime, timezone
 import json
-from pathlib import Path
 import sys
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 # Ensure repository root is on sys.path
@@ -27,11 +27,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from bankism.app.firewall.pipeline import FirewallPipeline
-from bankism.app.schemas.requests import BankingOperation, FirewallAnalyzeRequest
-from bankism.app.schemas.verdicts import Verdict
-
-
 from bankism.app.firewall.threat_classifier import ClassifierResult, ThreatClassifier
+from bankism.app.schemas.requests import BankingOperation, FirewallAnalyzeRequest
 from bankism.app.schemas.verdicts import ThreatCategory
 
 
@@ -166,12 +163,12 @@ async def evaluate() -> None:
     f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
     overall_accuracy = (tp + tn) / total_samples
 
-    print(f"Confusion Matrix:")
+    print("Confusion Matrix:")
     print(f"  True Positives (Attacks Blocked):        {tp:3d} / {total_adversarial}")
     print(f"  False Negatives (Attacks Missed):        {fn:3d} / {total_adversarial}")
     print(f"  True Negatives (Benign Approved):        {tn:3d} / {total_benign}")
     print(f"  False Positives (Benign False Blocks):   {fp:3d} / {total_benign}")
-    print(f"\nCore Defensive Metrics:")
+    print("\nCore Defensive Metrics:")
     print(f"  Attack Detection Rate (Recall / TPR):    {recall * 100:.2f}%")
     print(f"  False Positive Rate (FPR):               {fpr * 100:.2f}%")
     print(f"  False Negative Rate (FNR):               {fnr * 100:.2f}%")
@@ -179,7 +176,7 @@ async def evaluate() -> None:
     print(f"  F1-Score:                                {f1 * 100:.2f}%")
     print(f"  Overall Accuracy:                        {overall_accuracy * 100:.2f}%\n")
 
-    print(f"Per-Category Results Breakdown:")
+    print("Per-Category Results Breakdown:")
     print(f"{'Category':<35} | {'Total':<6} | {'Correct':<8} | {'Accuracy':<8}")
     print("-" * 65)
     for cat, stats in sorted(category_stats.items()):
@@ -188,8 +185,8 @@ async def evaluate() -> None:
 
     # Generate Markdown Evaluation Report
     report_content = f"""# Bankism — Security Evaluation Report
-Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}  
-System: Bankism AI Firewall & Guardrail Defense  
+Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+System: Bankism AI Firewall & Guardrail Defense
 Dataset: `datasets/evaluation_cases.json` ({total_samples} distinct test cases)
 
 ---

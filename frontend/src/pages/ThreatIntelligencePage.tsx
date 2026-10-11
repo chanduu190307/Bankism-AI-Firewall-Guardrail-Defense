@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MetricCard } from '../components/common/MetricCard';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { BarChart } from '../components/charts/BarChart';
@@ -17,6 +17,40 @@ export const ThreatIntelligencePage: React.FC<ThreatIntelligencePageProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedRecord, setSelectedRecord] = useState<AuditLogRecord | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Accessible keyboard trap & Escape handling for threat details modal
+  useEffect(() => {
+    if (!selectedRecord) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedRecord(null);
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedRecord]);
 
   // Filter logs for threats
   const threatLogs = logs.filter(
@@ -320,6 +354,7 @@ export const ThreatIntelligencePage: React.FC<ThreatIntelligencePageProps> = ({
                         className="btn btn-secondary btn-sm"
                         onClick={() => setSelectedRecord(log)}
                         style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
+                        aria-label={`Inspect threat event details for request ${log.request_id.slice(0, 16)}`}
                       >
                         Inspect
                       </button>
@@ -347,14 +382,16 @@ export const ThreatIntelligencePage: React.FC<ThreatIntelligencePageProps> = ({
         <div
           className="modal-backdrop"
           onClick={() => setSelectedRecord(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="threat-modal-title"
+          role="presentation"
         >
           <div
+            ref={modalRef}
             className="modal-dialog"
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '580px' }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="threat-modal-title"
           >
             <div className="modal-header">
               <h3 id="threat-modal-title" className="card-title">

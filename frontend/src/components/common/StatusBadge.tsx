@@ -46,7 +46,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       icon = '🔴';
     }
   } else if (type === 'status') {
-    if (value === 'EXECUTED' || value === 'HEALTHY' || value === 'ONLINE') {
+    if (value === 'COMPLETED' || value === 'EXECUTED' || value === 'HEALTHY' || value === 'ONLINE') {
       badgeClass = 'badge-approve';
       icon = '✓';
     } else if (value === 'BLOCKED' || value === 'FAILED' || value === 'ERROR') {

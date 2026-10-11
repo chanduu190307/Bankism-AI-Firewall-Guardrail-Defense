@@ -59,15 +59,20 @@ export interface BankingExecuteRequest {
 
 export interface BankingExecuteResponse {
   transaction_id: string;
-  request_id: string;
-  status: 'EXECUTED' | 'REJECTED' | 'FAILED';
+  request_id?: string;
+  status: 'COMPLETED' | 'EXECUTED' | 'REJECTED' | 'BLOCKED' | 'FAILED';
   operation: BankingOperation;
-  account_id: string;
+  source_account?: string;
+  account_id?: string;
+  recipient_account?: string;
   recipient_id?: string;
   amount?: number;
+  currency?: string;
+  previous_balance?: number;
   new_balance?: number;
+  executed_at?: string;
   message: string;
-  timestamp: string;
+  timestamp?: string;
 }
 
 export interface AuditLogRecord {

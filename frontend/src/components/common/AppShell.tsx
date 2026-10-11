@@ -27,6 +27,9 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   return (
     <div className="app-container">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <Sidebar
         currentPage={currentPage}
         onSelectPage={onSelectPage}

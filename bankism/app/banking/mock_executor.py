@@ -5,7 +5,9 @@ from typing import Any
 
 from bankism.app.core.errors import (
     AccountNotFoundError,
+    DuplicateTransactionError,
     InsufficientFundsError,
+    InvalidExecutionTokenError,
 )
 from bankism.app.core.security import verify_execution_token
 from bankism.app.schemas.requests import (
@@ -38,6 +40,16 @@ class MockBankingExecutor:
             self._locks[account_id] = asyncio.Lock()
         return self._locks[account_id]
 
+    @staticmethod
+    def _extract_transaction_params(request: BankingExecuteRequest) -> dict[str, Any]:
+        """Extract canonical parameters for idempotency validation."""
+        return {
+            "op": request.operation.value,
+            "acc": request.account_id,
+            "rec": request.recipient_id,
+            "amt": request.amount,
+        }
+
     def reset(self) -> None:
         """Reset ledger state to defaults for clean test execution."""
         self._balances = dict(DEFAULT_BALANCES)
@@ -61,30 +73,21 @@ class MockBankingExecutor:
         2. Idempotent replay protection with parameter conflict detection.
         3. Atomic balance updates preventing race conditions and double spending.
         """
+        current_params = self._extract_transaction_params(request)
+
         # 1. Check idempotency cache first
         if request.idempotency_key and request.idempotency_key in self._idempotency_cache:
             cached_params, cached_response = self._idempotency_cache[request.idempotency_key]
-            current_params = {
-                "op": request.operation.value,
-                "acc": request.account_id,
-                "rec": request.recipient_id,
-                "amt": request.amount,
-            }
             if cached_params != current_params:
-                from bankism.app.core.errors import DuplicateTransactionError
-
                 raise DuplicateTransactionError(
                     f"Idempotency key '{request.idempotency_key}' was previously used "
                     f"with conflicting transaction parameters."
                 )
             return cached_response
 
-
         # 2. Verify single-use execution token
         if verify_token:
             if not request.execution_token:
-                from bankism.app.core.errors import InvalidExecutionTokenError
-
                 raise InvalidExecutionTokenError(
                     "Execution token is required to execute banking operations."
                 )
@@ -114,13 +117,7 @@ class MockBankingExecutor:
                 message=f"Current available balance for {request.account_id} is ${balance:,.2f}.",
             )
             if request.idempotency_key:
-                params = {
-                    "op": request.operation.value,
-                    "acc": request.account_id,
-                    "rec": request.recipient_id,
-                    "amt": request.amount,
-                }
-                self._idempotency_cache[request.idempotency_key] = (params, response)
+                self._idempotency_cache[request.idempotency_key] = (current_params, response)
             return response
 
 
@@ -174,14 +171,10 @@ class MockBankingExecutor:
                     )
 
                     if request.idempotency_key:
-                        params = {
-                            "op": request.operation.value,
-                            "acc": request.account_id,
-                            "rec": request.recipient_id,
-                            "amt": request.amount,
-                        }
-                        self._idempotency_cache[request.idempotency_key] = (params, response)
-
+                        self._idempotency_cache[request.idempotency_key] = (
+                            current_params,
+                            response,
+                        )
 
                     return response
 

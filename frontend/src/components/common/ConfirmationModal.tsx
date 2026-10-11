@@ -21,13 +21,31 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   onCancel,
   isDestructive = false,
 }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       confirmBtnRef.current?.focus();
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') onCancel();
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          onCancel();
+        } else if (e.key === 'Tab' && modalRef.current) {
+          const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusable.length === 0) return;
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       };
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
@@ -40,12 +58,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     <div
       className="modal-backdrop"
       onClick={onCancel}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
     >
       <div
+        ref={modalRef}
         className="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        aria-describedby="modal-desc"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
@@ -62,7 +82,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           </button>
         </div>
         <div className="modal-body">
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.5 }}>
+          <p id="modal-desc" style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.5 }}>
             {message}
           </p>
         </div>
