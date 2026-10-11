@@ -1,0 +1,1 @@
+"""Bankism test suite."""
